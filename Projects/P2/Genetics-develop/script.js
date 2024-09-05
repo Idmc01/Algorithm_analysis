@@ -1,0 +1,458 @@
+var imagenCargada = document.getElementById('imageSrc');
+let fileInput = document.getElementById('fileInput');
+
+// CLASE DEL INDIVIDUO
+/**
+ * Clase para los individuos de las poblaciones.
+ */
+class Individuo {
+
+  /**
+   * Crea un individuo y le asigna un número específico de genes.
+   * @param {number} genes - Cantidad de genes del individuo.
+   */
+  constructor(genes) {
+    this.genes = genes;
+  }
+
+  /**
+   * Genera un conjunto de puntos (genes) para el individuo.
+   * @param {cv.Mat} src - Imagen de referencia para generar los puntos.
+   * @returns {Array[]} puntosIndividuo - Conjunto de puntos generados.
+   */
+  generar(src) {
+
+    const arrayPuntos = Array.from({ length: this.genes }, () => [
+      Math.floor(Math.random() * (src.cols - 0 + 1)) + 0,
+      Math.floor(Math.random() * (src.rows - 0 + 1)) + 0
+    ]);
+
+    let puntosIndividuo = []
+    for (let i = 0; i < arrayPuntos.length; i++) {
+      let p1 = new cv.Point(arrayPuntos[i][0], arrayPuntos[i][1]);
+      puntosIndividuo.push(p1)
+    }
+
+    return puntosIndividuo;
+
+  }
+
+}
+
+
+// CLASE DE LA POBLACION
+/**
+ * Clase de las poblaciones de individuos.
+ */
+class Poblacion {
+  constructor(poblacionIndividuos, porcentajeMezclados) {
+    this.poblacionIndividuos = poblacionIndividuos;
+    this.porcentajeMezclados = porcentajeMezclados;
+
+    this.arrayPoblacion = [];
+  }
+
+  /**
+   * Genera un conjunto de individuos para trabajar posteriormente.
+   * @param {cv.Mat} src - Imagen de referencia para generar los puntos.
+   * @returns {Array[]} arrayPoblacion - Conjunto de individuos.
+   */
+  inicializarPoblacion(src) {
+
+    for (let i = 0; i < this.poblacionIndividuos; i++) {
+
+      let ind1 = new Individuo(2);
+      let indGenerado = ind1.generar(src);
+      this.arrayPoblacion.push(indGenerado);
+
+    }
+
+    return this.arrayPoblacion;
+
+  }
+
+  /**
+   * Cruza los individuos de una población.
+   * @param {Array[]} pob - Población.
+   * @param {Array[]} seleccion - Individuos ganadores del torneo.
+   * @returns {Array[]} pob - Población ya cruzada.
+   */
+  cruzar(pob, seleccion) {
+
+    for (let i = 0; i < pob.length; i++) {
+      if (Math.random() * 100 <= this.porcentajeMezclados) {
+        const arregloSeleccionadosCopias = seleccion.slice();
+        const arregloPadres = [];
+
+        for (let j = 0; j < 2; j++) { //2 padres
+          const indiceAleatorio = Math.floor(Math.random() * arregloSeleccionadosCopias.length);
+          const elementoAleatorio = arregloSeleccionadosCopias[indiceAleatorio];
+          arregloPadres.push(elementoAleatorio);
+        }
+
+        let padre1 = false;
+        for (let x = 0; x < pob[i].length; x++) {
+          pob[i][x] = padre1 ? arregloPadres[0][x] : arregloPadres[1][x];
+          padre1 = !padre1;
+        }
+      }
+    }
+
+    return pob;
+
+  }
+
+  /**
+   * Escoge a los mejores individuos de una población.
+   * @param {Array[]} pob - Población.
+   * @param {cv.Mat} objetivo - Imagen en forma de matriz.
+   * @returns {Array[]} seleccionadosLista - Individuos ganadores del torneo.
+   */
+  seleccionTorneo(pob, objetivo) {
+    const cantidadSeleccion = (getIndividuosMezclados() * getIndividuosSeleccionados()) / 100;
+
+    const individuosConFitness = pob.map((individuo) => [(fitness(individuo, objetivo)), individuo]);
+
+    individuosConFitness.sort((a, b) => b[0] - a[0]);
+
+    const seleccionados = individuosConFitness.slice(0, cantidadSeleccion);
+
+    console.log("fitness");
+    console.log(seleccionados[0][0]);
+    fitnessHistorico.push(seleccionados[0][0]);
+
+    const seleccionadosLista = seleccionados.map(([sf, individuo]) => individuo);
+
+    return seleccionadosLista;
+  }
+
+}
+
+// GET DE LOS SLIDERS
+// Cantidad Individuos
+/**
+ * Obtiene el la cantidad de individuos por población.
+ * @returns {number} - Cantidad de individuos por generación.
+ */
+
+function getCantIndividuos() {
+  return document.getElementById('sliderInds').value;
+}
+
+const sliderInds = document.getElementById('sliderInds');
+const inds = document.getElementById('inds');
+
+sliderInds.addEventListener('input', function () {
+  inds.textContent = "Individuos por población: " + this.value;
+});
+
+
+// Cantidad Generaciones
+/**
+ * Obtiene la cantidad de generaciones.
+ * @returns {number} - Cantidad de generaciones.
+ */
+
+function getCantGeneraciones() {
+  return document.getElementById('sliderCantGens').value;
+}
+
+const sliderCantGens = document.getElementById('sliderCantGens');
+const CantGens = document.getElementById('CantGens');
+
+sliderCantGens.addEventListener('input', function () {
+  CantGens.textContent = "Generaciones: " + this.value;
+});
+
+
+// Porcentaje Seleccionados
+/**
+ * Obtiene el porcentaje de individuos seleccionados.
+ * @returns {number} - Porcentaje de individuos seleccionados.
+ */
+function getIndividuosSeleccionados() {
+  return parseInt(document.getElementById('SliderSeleccionados').value);
+}
+
+const sliderSeleccionados = document.getElementById('SliderSeleccionados');
+const seleccionadosLabel = document.getElementById('seleccionados');
+
+sliderSeleccionados.addEventListener('input', function () {
+  seleccionadosLabel.textContent = "Individuos seleccionados en cada gen: " + this.value + "%";
+});
+
+
+//Porcentaje a mutar
+/**
+ * Obtiene el porcentaje de individuos a mutar.
+ * @returns {number} - Porcentaje de individuos a mutar.
+ */
+
+function getIndividuosMutados() {
+  return parseInt(document.getElementById('sliderIndsMutados').value);
+}
+
+const sliderMutados = document.getElementById('sliderIndsMutados');
+const mutados = document.getElementById('mutados');
+
+sliderMutados.addEventListener('input', function () {
+  mutados.textContent = "Individuos a mutar: " + this.value + "%";
+});
+
+
+// Porcentaje Individuos Mezclados
+/**
+ * Obtiene el porcentaje de individuos a combinar.
+ * @returns {number} - Porcentaje de individuos a combinar.
+ */
+function getIndividuosMezclados() {
+  return parseInt(document.getElementById('sliderIndsCombinados').value);
+}
+
+const sliderCombinados = document.getElementById('sliderIndsCombinados');
+const combinados = document.getElementById('combinados');
+
+sliderCombinados.addEventListener('input', function () {
+  combinados.textContent = "Individuos a combinar: " + this.value + "%";
+});
+
+
+// ARRAYS PARA LA CHART
+var fitnessHistorico = [];
+var tiemposHistorico = [];
+
+
+//FITNESS
+/**
+ * Calcula el fitness de un individuo comparándolo con una imagen representada como un cv.Mat.
+ * @param {Point[]} individuo - Conjunto de puntos (individuo) a evaluar.
+ * @param {cv.Mat} cvMat - Imagen a comparar con el individuo.
+ * @returns {number} - Valor del fitness del individuo.
+ */
+function fitness(individuo, cvMat) {
+  let suma = 0;
+
+  //hacemos imagen el ind
+  let individuoMat = new cv.Mat(individuo.length, 1, cv.CV_8UC1);
+  individuo.forEach((punto, index) => {
+    individuoMat.ucharPtr(index, 0)[0] = punto; //lo pasamos a puntos
+  });
+
+  for (let i = 0; i < cvMat.rows; i++) {
+    for (let j = 0; j < cvMat.cols; j++) {
+      let diff = individuoMat.ucharPtr(i * cvMat.cols + j, 0)[0] - cvMat.ucharPtr(i, j)[0];
+      suma += diff * diff;
+    }
+  }
+
+  let fit = suma / (cvMat.rows * cvMat.cols);
+
+  individuoMat.delete();
+
+  return fit;
+}
+
+/**
+ * Realiza mutaciones en una población de individuos.
+ * @param {Array[][]} pob - Población de individuos.
+ * @param {cv.Mat} src - Imagen de referencia para las mutaciones.
+ * @returns {Array[][]} copiaPoblacion - Población de individuos con mutaciones.
+ */
+function mutar(pob, src) {
+
+  const copiaPoblacion = pob.slice();
+
+  for (let i = 0; i < pob.length; i++) {
+
+    var numeroAleatorio = Math.floor(Math.random() * 100) + 1;
+    if (numeroAleatorio <= getIndividuosMutados()) {
+
+      for (let p = 0; p < copiaPoblacion[i].length; p++) {
+
+        if ((Math.floor(Math.random() * 100) + 1) < 50)
+          copiaPoblacion[i] == 255;
+        }
+
+    }
+    if (copiaPoblacion[i].length < 20) {
+      const pointX = Math.floor(Math.random() * (src.rows - 0 + 1)) + 0;
+      const pointY = Math.floor(Math.random() * (src.cols - 0 + 1)) + 0;
+      const punt1 = new cv.Point(pointX, pointY);
+      copiaPoblacion[i].push(punt1);
+    }
+
+
+  }
+  return copiaPoblacion;
+}
+
+/**
+ * Revisa que los porcentajes ajustables sumen 100.
+ * @returns {Boolean} proseguir - Booleano para saber si cumple con el requisito.
+ */
+function revisarPorcentaje() {
+
+  const proseguir = true;
+  if (getIndividuosSeleccionados() + getIndividuosMutados() + getIndividuosMezclados() != 100) {
+    proseguir
+    alert("Los porcentajes no suman 100%");
+    proseguir = false;
+  }
+
+  return proseguir;
+}
+
+
+fileInput.addEventListener('change', (e) => {
+  imagenCargada.src = URL.createObjectURL(e.target.files[0]);
+
+  imagenCargada.onload = function () {
+    let src = cv.imread(imagenCargada);  //hace cv.mat a la imagen
+    var startTimeTotal = new Date();
+    if (revisarPorcentaje()) {
+
+      document.getElementById("procesoDetalle").innerHTML = "Procesando...";
+      var tiempoGenPromedio = 0;
+
+      const poblacion = new Poblacion(getCantIndividuos(), getIndividuosMezclados());
+
+      // inicializar población 
+      let poblacionActual = poblacion.inicializarPoblacion(src);
+
+      const numGeneraciones = getCantGeneraciones();
+
+      for (let generacion = 0; generacion < numGeneraciones; generacion++) {
+        let startTimePromedio = performance.now();
+        // seleccionados 
+        const seleccionados = poblacion.seleccionTorneo(poblacionActual, src);
+
+        // cruzar individuos seleccionados
+        const poblacionCruzada = poblacion.cruzar(poblacionActual, seleccionados);
+
+        // mutar
+        const poblacionMutada = mutar(poblacionCruzada, src);
+
+        // actualizar población para la siguiente gen
+        poblacionActual = poblacionMutada;
+
+        let endTimePromedio = performance.now();
+        tiempoGenPromedio += endTimePromedio - startTimePromedio; //Tiempo de esta gen
+        tiemposHistorico.push((tiempoGenPromedio / getCantGeneraciones()) / 1000).toFixed(2);
+
+        console.log("gen: " + generacion);
+        console.log(poblacionActual); //ver en consola fitness
+
+        document.getElementById("promedioGens").innerHTML = "Promedio de tiempo de cada gen: " + ((tiempoGenPromedio / getCantGeneraciones()) / 1000).toFixed(2);
+      }
+      console.log(poblacionActual);
+
+      mostrarIndividuo(poblacionActual[0], src); //dibuja en el canvas un individuo final
+
+      // guarda los puntos del individuo
+      let puntosIndividuo = poblacionActual[0];
+
+      // lugar para mostrar
+      let container = document.getElementById("puntosContainer");
+
+      // var para hacer puntos html
+      let ul = document.createElement("ul");
+
+      // agregar cada punto a la lista
+      puntosIndividuo.forEach((punto, index) => {
+        let li = document.createElement("li");
+        li.textContent = `Punto ${index}: x=${punto.x}, y=${punto.y}`;
+        ul.appendChild(li);
+      });
+
+      // agregar la lista al contenedor en el documento HTML
+      container.appendChild(ul);
+
+      //mensaje final
+      document.getElementById("procesoDetalle").innerText = "Proceso Terminado!"; 
+
+      src.delete();
+    }
+    let endTimeTotal = new Date();
+    var tiempoTotal = Math.floor((endTimeTotal - startTimeTotal) / 1000);
+    
+    document.getElementById("totalTime").textContent = "Tiempo total: " + tiempoTotal + " segundos";
+  };
+}, false);
+
+
+/**
+ * Dibuja un individuo en el canvas.
+ * @param {Array[]} individuo - Conjunto de puntos representando el individuo.
+ * @param {cv.Mat} src - Imagen base del programa.
+ */
+function mostrarIndividuo(individuo, src) {
+  individuo = ordenamientoCoordenadas(individuo);
+  console.log(individuo);
+  let mat = new cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC4);
+
+  for (let i = 0; i < individuo.length - 1; i++) {
+    cv.line(mat, individuo[i], individuo[i + 1], [0, 0, 0, 255], 1); 
+  }
+  cv.imshow('canvasFinal', mat);
+  mat.delete();
+}
+
+
+/**
+ * Ordena un conjunto de coordenadas basado en su cercanía al origen.
+ * @param {Array[]} coordenadas - Conjunto de coordenadas a ordenar.
+ * @returns {Array[]} coordenadas - Coordenadas ya ordenadas.
+ */
+function ordenamientoCoordenadas(coordenadas) {
+
+  function compararCercania(coordA, coordB) {
+    const distanciaA = Math.sqrt(coordA.x * coordA.x + coordA.y * coordA.y);
+    const distanciaB = Math.sqrt(coordB.x * coordB.x + coordB.y * coordB.y);
+    return distanciaA - distanciaB;
+  }
+
+  coordenadas.sort(compararCercania);
+
+  return coordenadas;
+}
+
+
+
+//TABLA 
+/**
+ * Coloca el label inferior dependiendo de cuantos datos tenga el 'fitnessHistorico'.
+ * @returns {Array[]} numeroGens - Labels para la tabla.
+ */
+function labelTabla() {
+  let numeroGens = []; // aquí van las labels de la chart 
+  let contador = 1;
+  for (dato in fitnessHistorico) { 
+    numeroGens.push(contador);
+    contador++;
+  }
+  return numeroGens;
+}
+
+const botonTabla = document.getElementById("botonTabla");
+
+botonTabla.addEventListener("click", function () {
+  let ctx = document.getElementById("lineChart").getContext("2d");
+  let myChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labelTabla(),
+      datasets: [
+        {
+          label: "Convergencia del Fitness",
+          data: fitnessHistorico,
+          backgroundColor: "rgba(153,205,1,0.6)",
+        },
+        {
+          label: "Tiempo",
+          data: tiemposHistorico,
+          backgroundColor: "rgba(155,153,10,0.6)",
+        },
+      ],
+    },
+  });
+});

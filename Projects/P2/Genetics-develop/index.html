@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Proyecto 2</title>
+
+        <!--ESTILOS-->
+        <style>
+            body {
+                background-color: #fffdd0 !important;
+            }
+        </style>
+    
+        <!--OPENCV-->
+        <script async src="https://docs.opencv.org/master/opencv.js"  type="text/javascript"></script>
+
+        <!--BOOTSTRAP-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+        <!--BOOTSTRAP PARA LA CHART-->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js" type="text/javascript"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.2/Chart.min.js"></script>
+        
+    </head>
+    <body>
+        <!--TITULO-->
+        <div class="container">
+            <h1 style="padding: 2%; text-align: center;">Imagen a SVG</h1>
+        </div>
+
+        <!--AJUSTES-->
+        <div class="container">
+            
+            <hr>
+            <div class="row">
+                <div class="col-md">
+                    <label class="form-label" id="inds" style="font-weight: bold;">Individuos por población: 20</label>
+                </div>
+                <div class="col-md">
+                    <input type="range" class="form-range" id="sliderInds" min="1" max="100" value="20">
+                </div>
+            </div>
+
+            <hr>
+            <div class="row">
+                <div class="col-md">
+                    <label class="form-label" id="CantGens" style="font-weight: bold;">Generaciones: 20</label>
+                </div>
+                <div class="col-md">
+                    <input type="range" class="form-range" id="sliderCantGens" min="1" max="200" value="20">
+                </div>
+            </div>
+
+            <hr>
+            <div class="row">
+                <div class="col-md">
+                    <label class="form-label" id="seleccionados" style="font-weight: bold;">Individuos seleccionados en cada gen: 20%</label>
+                </div>
+                <div class="col-md">
+                    <input type="range" class="form-range" id="SliderSeleccionados" min="1" max="100" value="20">
+                </div>
+            </div>
+
+            <hr>
+            <div class="row">
+                <div class="col-md">
+                    <label class="form-label" id="mutados" style="font-weight: bold;">Individuos a mutar: 40%</label>
+                </div>
+                <div class="col-md">
+                    <input type="range" class="form-range" id="sliderIndsMutados" min="1" max="100" value="40">
+                </div>
+            </div>
+
+            <hr>
+            <div class="row">
+                <div class="col-md">
+                    <label class="form-label" id="combinados" style="font-weight: bold;">Individuos a combinar: 40%</label>
+                </div>
+                <div class="col-md">
+                  <input type="range" class="form-range" id="sliderIndsCombinados" min="1" max="100" value="40">
+                </div>
+            </div>
+            <hr>
+              
+        </div>
+
+
+
+        <div class="container">
+            <h2>Cargar imagen:</h2>
+            <div class="inputoutput">
+              <img id="imageSrc"/>
+              <input type="file" class="form-control-file" id="fileInput" name="file" />
+            </div>
+            
+            <h2 id="procesoResultado"></h2>
+      
+            <div id="marco">
+              <canvas id="canvasFinal"></canvas>
+            </div>
+            <h2 id="mensajeFinal"></h2>
+            <button class="btn btn-success" id="botonTabla">Mostrar Tabla</button>
+            
+            <div class="container">
+                <canvas id="lineChart"></canvas>
+            </div>
+
+            <div id="puntosContainer"></div>
+      
+            <div id="container">
+                <h2 id="procesoDetalle">Esperando imagen...</h2>
+                <h2 id="promedioGens">Promedio de tiempo de cada gen: 0</h2>
+                <h2 id="totalTime">Tiempo total: 0</h2>
+            
+            <p id="status">OpenCV.js is loading...</p>
+          </div>
+        </div>
+
+
+        <!--SCRIPT JS-->
+        <script src="script.js"></script>
+
+        <script>
+            var Module = {
+                onRuntimeInitialized() {
+                    document.getElementById('status').innerHTML = 'OpenCV.js is ready';
+                }
+            };
+        </script>
+
+    </body>
+</html>

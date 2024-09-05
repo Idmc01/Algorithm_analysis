@@ -1,0 +1,572 @@
+/**
+ * matriz del tablero
+ * @type {number[][]}
+ */
+var board = [];
+
+/**
+ * fila y columna de la celda en "0" en el tablero
+ * @type {number}
+ */
+let blankRow, blankCol; 
+
+/**
+ * variable para el tamaño del board
+ * @type {number}
+ */
+let boardSize;
+
+/**
+ * carga del DOM 
+ */
+document.addEventListener("DOMContentLoaded", function () {
+    const boardSizeSelect = document.getElementById("board-size"); // Tamanno del puzzle
+    const puzzleBoard = document.getElementById("tablero-container"); // Tablero
+
+    const shuffleButton = document.getElementById("mix-button"); // Boton de mezclar
+
+    const solBT = document.getElementById("sol-bt"); // muestra la solucion por bt
+    const solA = document.getElementById("sol-a"); // muestra la solucion de A*
+
+
+    const textSol1 = document.getElementById("sol1"); // espacio de texto para la solucion 1 (backtraking)
+    const textSol2 = document.getElementById("sol2"); // espacio de texto para la solucion 2 (A*)
+
+    solBT.addEventListener("click", function () {
+        const solBacktraking = solveNPuzzle(board);
+        textSol1.innerHTML = solBacktraking; // Escribe la sol
+    });
+
+    solA.addEventListener("click", function () {
+        const solAStar = solveAStarPuzzle(board);
+        textSol2.innerHTML = solAStar; // Escribe la sol
+    });
+
+
+    boardSizeSelect.addEventListener("change", function () {
+
+        puzzleBoard.innerHTML = "";
+        const selectedSize = parseInt(boardSizeSelect.value);
+        console.log(selectedSize)
+        const tablero = createBoard(selectedSize);
+        renderBoard(tablero);
+    });
+
+    // cuando se pide mezclar esto se dispara
+    shuffleButton.addEventListener("click", function () {
+
+        const n = board.length;
+        if (n < 2 || !esResoluble(board)) {
+            // la matriz no se puede mezclar 
+            return null;
+        }
+
+
+        // hace una versión plana de la matriz
+        const listaPlana = board.flat();
+
+        // mix a la matriz mientras se asegura de que sea resoluble
+        while (true) {
+            for (let i = listaPlana.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [listaPlana[i], listaPlana[j]] = [listaPlana[j], listaPlana[i]];
+            }
+
+            // plana a una matriz
+            const matrizMezclada = [];
+            for (let i = 0; i < n; i++) {
+                matrizMezclada.push(listaPlana.slice(i * n, (i + 1) * n));
+            }
+
+            if (esResoluble(matrizMezclada)) {
+                board = matrizMezclada;
+                puzzleBoard.innerHTML = "";
+                renderBoard(board);
+                return board;
+            }
+        }
+
+    });
+
+});
+
+/**
+ * verifica si una matriz es resoluble
+ * @param {number[][]} matriz - La matriz a verificar
+ * @returns {boolean} True si la matriz es resoluble, false en caso contrario
+ */
+function esResoluble(matriz) {
+    // convierte la matriz en una lista plana
+    const listaPlana = matriz.flat().filter(numero => numero !== 0);
+
+    // calcula el número de inversiones
+    let inversiones = 0;
+    for (let i = 0; i < listaPlana.length; i++) {
+        for (let j = i + 1; j < listaPlana.length; j++) {
+            if (listaPlana[i] > listaPlana[j]) {
+                inversiones++;
+            }
+        }
+    }
+
+    // La matriz es resoluble si el número de inversiones es par
+    return inversiones % 2 === 0;
+}
+
+
+
+/**
+ * crea la matriz del tablero con el tamaño N
+ * @param {number} N - El tamaño del tablero (N x N)
+ * @returns {number[][]} La matriz del tablero ya creada
+ */
+function createBoard(N) {
+    
+    count = 1;
+    for (let i = 0; i < N; i++) {
+        const row = [];
+        for (let j = 0; j < N; j++) {
+            // Pone valor a cada celda y la última (N * N) la pone en 0
+            row.push(count != N * N ? count : 0);
+            count++;
+        }
+        board.push(row);
+    }
+    return board;
+}
+
+
+/**
+ * renderiza el tablero de botones en forma de matriz con controladores de eventos
+ * @param {number[][]} board - La matriz del tablero a renderizar
+ */
+// Muestra el tablero de botones en forma de matriz con controladores de eventos
+function renderBoard(board) {
+    const tableroContainer = document.getElementById('tablero-container');
+    
+    // Elimina cualquier contenido existente en el contenedor
+    tableroContainer.innerHTML = "";
+
+    boardSize = board.length; // Tamaño del tablero (NxN)
+
+    const table = document.createElement('table');
+
+    for (let i = 0; i < boardSize; i++) {
+        const row = document.createElement('tr');
+
+        for (let j = 0; j < boardSize; j++) {
+            const cell = document.createElement('td');
+            const button = document.createElement('button');
+
+            const imgs = document.getElementById("imagenes"); 
+            console.log(imgs.value)
+            const imagenFondo = imgs.value
+            button.style.backgroundImage = `url(${imagenFondo})`; 
+            button.style.backgroundSize = 'cover'; 
+        
+
+            button.textContent = board[i][j]; 
+
+            button.style.backgroundColor = "lime"
+            
+            button.addEventListener("click", function () {
+                handleButtonClick(i, j); 
+            });
+
+            cell.appendChild(button);
+            row.appendChild(cell);
+
+            if (board[i][j] === 0) {
+                // encuentra la posición del espacio en blanco
+                blankRow = i;
+                blankCol = j;
+            }
+        }
+
+        table.appendChild(row);
+    }
+
+    tableroContainer.appendChild(table);
+}
+
+
+
+/**
+ * Maneja el clic sobre un botón en la matriz.
+ * @param {number} row - La fila del botón clicado.
+ * @param {number} col - La columna del botón clicado.
+ */
+function handleButtonClick(row, col) {
+    // verifica si el botón clicado es adyacente al espacio en blanco
+    if ((row === blankRow && Math.abs(col - blankCol) === 1) ||
+        (col === blankCol && Math.abs(row - blankRow) === 1)) {
+        // intercambia los valores entre el botón clicado y el espacio en blanco
+        const temp = board[row][col];
+        board[row][col] = 0;
+        board[blankRow][blankCol] = temp;
+
+        // actualiza la posición del espacio en blanco
+        blankRow = row;
+        blankCol = col;
+
+        renderBoard(board);
+    }
+}
+
+//seccion backtraking
+/**
+ * Resuelve el puzzle utilizando el algoritmo de backtracking
+ * @param {number[][]} board - La matriz del tablero del puzzle
+ * @returns {string | string[]} Los movimientos para resolver el rompecabezas o un mensaje de error
+ */
+function solveNPuzzle(board) {
+    const N = board.length;
+    const moves = [];
+    const targetBoard = createTargetBoard(N);
+
+
+    /**
+     * Crea el board objetivo para el rompecabezas de N-puzzle
+     * @param {number} N - El tamaño del board (NxN)
+     * @returns {number[][]} El board objetivo (resuelto)
+     */
+    function createTargetBoard(N) {
+        const target = [];
+        let num = 1;
+
+        for (let i = 0; i < N; i++) {
+            const row = [];
+            for (let j = 0; j < N; j++) {
+                row.push(num);
+                num++;
+            }
+            target.push(row);
+        }
+        target[N - 1][N - 1] = 0;
+        return target;
+    }
+
+
+    /**
+     * Copia una matriz de board
+     * @param {number[][]} board - La matriz del board a copiar
+     * @returns {number[][]} La copia de la matriz del board
+     */
+    function copyBoard(board) {
+        return board.map(row => [...row]);
+    }
+
+
+    /**
+     * Verifica si el rompecabezas está resuelto, utilizada para BT
+     * @param {number[][]} board - La matriz del board actual
+     * @returns {boolean} True si el rompecabezas está resuelto, false en caso contrario
+     */
+    function isSolved(board) {
+        for (let i = 0; i < N; i++) {
+            for (let j = 0; j < N; j++) {
+                if (board[i][j] !== targetBoard[i][j]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
+    /**
+     * Encuentra la posición del espacio en blanco en el board
+     * @param {number[][]} board - La matriz del tablero actual
+     * @returns {{row: number, col: number}} La posición del espacio en blanco
+     */
+    function findEmpty(board) {
+        for (let i = 0; i < N; i++) {
+            for (let j = 0; j < N; j++) {
+                if (board[i][j] === 0) {
+                    return { row: i, col: j };
+                }
+            }
+        }
+    }
+
+    const queue = [];
+    const visited = new Set();
+
+    queue.push({ board, moves: [] });
+
+    while (queue.length > 0) {
+        const { board, moves } = queue.shift();
+
+        if (isSolved(board)) {
+            setTimeout(() => { renderBoard(targetBoard) }, 2000);
+            return moves;
+        }
+
+        const dx = [-1, 1, 0, 0];
+        const dy = [0, 0, -1, 1];
+        const empty = findEmpty(board);
+
+
+        for (let i = 0; i < 4; i++) {    //for sol escrita
+            const newRow = empty.row + dx[i];
+            const newCol = empty.col + dy[i];
+
+            if (newRow >= 0 && newRow < N && newCol >= 0 && newCol < N) {
+                const newBoard = copyBoard(board);
+                [newBoard[empty.row][empty.col], newBoard[newRow][newCol]] = [newBoard[newRow][newCol], newBoard[empty.row][empty.col]];
+                const newMoves = [...moves, " " + newBoard[empty.row][empty.col] + " " + getMoveName(i)];
+                const boardString = JSON.stringify(newBoard);
+
+                if (!visited.has(boardString)) {
+                    visited.add(boardString);
+                    queue.push({ board: newBoard, moves: newMoves });
+                }
+                // renderBoard(newBoard);
+
+            }
+        }
+
+
+        for (let i = 0; i < 4; i++) {     //for  paso a paso
+            setTimeout(() => {
+
+                const newRow = empty.row + dx[i];
+                const newCol = empty.col + dy[i];
+
+                if (newRow >= 0 && newRow < N && newCol >= 0 && newCol < N) {
+                    const newBoard = copyBoard(board);
+                    [newBoard[empty.row][empty.col], newBoard[newRow][newCol]] = [newBoard[newRow][newCol], newBoard[empty.row][empty.col]];
+                    const newMoves = []
+                    const boardString = JSON.stringify(newBoard);
+
+                    if (!visited.has(boardString)) {
+                        visited.add(boardString);
+                        queue.push({ board: newBoard, moves: newMoves });
+                    }
+                    renderBoard(newBoard);
+
+                }
+            }, "1000");
+        }
+
+    }
+
+    return "No se encontró una solución.";
+
+
+     /**
+     * Obtiene el nombre de un movimiento basado en su índice
+     * @param {number} move - El índice del movimiento (0: Abajo, 1: Arriba, 2: Derecha, 3: Izquierda)
+     * @returns {string} El nombre del movimiento
+     */
+    function getMoveName(move) {
+        switch (move) {
+            case 0:
+                return "Abajo";
+            case 1:
+                return "Arriba";
+            case 2:
+                return "Derecha";
+            case 3:
+                return "Izquierda";
+            default:
+                return "";
+        }
+    }
+
+
+}
+
+
+
+// Seccion A*
+
+/**
+* Verifica si el rompecabezas está resuelto, esta función es utilizada para A*
+* @param {number[][]} board - La matriz del tablero actual
+* @returns {boolean} True si el rompecabezas está resuelto, false en caso contrario
+*/
+function isSolved(board) {
+    const N = board.length;
+    let value = 1;
+
+    for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+            if (i === N - 1 && j === N - 1) {
+                return true; // El último valor debe ser 0 para estar resuelto
+            }
+
+            if (board[i][j] !== value) {
+                return false;
+            }
+
+            value = (value + 1) % (N * N);
+        }
+    }
+
+    return true;
+}
+
+
+/**
+     * Calcula la distancia de Manhattan de una matriz dada, utilizada por A*
+     * @param {number[][]} board - La matriz del tablero actual
+     * @returns {number} La distancia Manhattan
+     */
+function getManhattanDistance(board) {
+    let distance = 0;
+    const N = board.length;
+    const goal = Array.from({ length: N }, (c, i) =>
+        Array.from({ length: N }, (c, j) => i * N + j + 1)
+    );
+
+    goal[N - 1][N - 1] = 0;
+
+    for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+            const value = board[i][j];
+            if (value !== 0) {
+                const goalPosition = findPosition(goal, value);
+                distance += Math.abs(i - goalPosition.row) + Math.abs(j - goalPosition.col);
+            }
+        }
+    }
+
+    return distance;
+}
+
+
+/**
+* Encuentra la posición de un valor en una matriz, utilizada para A*
+* @param {number[][]} matrix - La matriz en la que buscar
+* @param {number} value - El valor a buscar
+* @returns {{row: number, col: number} | null} La posición del valor o null si no se encuentra
+*/
+function findPosition(matrix, value) {
+    for (let i = 0; i < matrix.length; i++) {
+        for (let j = 0; j < matrix[i].length; j++) {
+            if (matrix[i][j] === value) {
+                return { row: i, col: j };
+            }
+        }
+    }
+    return null;
+}
+
+
+/**
+ * Resuelve el puzzle utilizando el algoritmo A*
+ * @param {number[][]} initial - La matriz del tablero del puzzle
+ * @returns {string | string[]} Los movimientos para resolver el puzzle o mensaje de sin solución
+ */
+function solveAStarPuzzle(initial) {
+    const N = initial.length;
+    const openSet = new Map();
+    const closedSet = new Set();
+
+    const startNode = {
+        board: initial,
+        parent: null,
+        move: null,
+        depth: 0,
+        heuristic: getManhattanDistance(initial),
+    };
+
+    openSet.set(JSON.stringify(initial), startNode);
+
+    while (openSet.size > 0) {
+        let current = null;
+        let currentCost = Infinity;
+
+        for (const [key, node] of openSet) {
+            if (node.depth + node.heuristic < currentCost) {
+                current = node;
+                currentCost = node.depth + node.heuristic;
+            }
+        }
+
+        openSet.delete(JSON.stringify(current.board));
+        closedSet.add(JSON.stringify(current.board));
+
+        if (isSolved(current.board)) {
+            const moves = [];
+            let currentNode = current;
+
+            while (currentNode.parent !== null) {
+                moves.unshift(currentNode.move);
+                currentNode = currentNode.parent;
+            }
+
+            return moves;
+        }
+
+        const empty = findPosition(current.board, 0);
+        const dx = [-1, 1, 0, 0];
+        const dy = [0, 0, -1, 1];
+        const moves = ["Abajo", "Arriba", "Derecha", "Izquierda"];
+
+
+        for (let i = 0; i < 4; i++) {
+            const newRow = empty.row + dx[i];
+            const newCol = empty.col + dy[i];
+
+            if (newRow >= 0 && newRow < N && newCol >= 0 && newCol < N) {
+                const newBoard = JSON.parse(JSON.stringify(current.board));
+                [newBoard[empty.row][empty.col], newBoard[newRow][newCol]] = [
+                    newBoard[newRow][newCol],
+                    newBoard[empty.row][empty.col],
+                ];
+                const newNode = {
+                    board: newBoard,
+                    parent: current,
+                    move: " " + newBoard[empty.row][empty.col] + " " + moves[i],
+                    depth: current.depth + 1,
+                    heuristic: getManhattanDistance(newBoard),
+                };
+                const boardString = JSON.stringify(newBoard);
+
+                if (!closedSet.has(boardString)) {
+                    openSet.set(boardString, newNode);
+                }
+
+                const infoNodo = document.getElementById("nodosAbiertos");
+                infoNodo.textContent += " Distancia Manhattan: " + newNode.heuristic + ", profundidad: " + newNode.depth + ", movimiento: " + newNode.move + ". ";
+
+            }
+        }
+
+
+        for (let i = 0; i < 4; i++) {
+            setTimeout(() => {
+                const newRow = empty.row + dx[i];
+                const newCol = empty.col + dy[i];
+
+                if (newRow >= 0 && newRow < N && newCol >= 0 && newCol < N) {
+                    const newBoard = JSON.parse(JSON.stringify(current.board));
+                    [newBoard[empty.row][empty.col], newBoard[newRow][newCol]] = [
+                        newBoard[newRow][newCol],
+                        newBoard[empty.row][empty.col],
+                    ];
+                    const newNode = {
+                        board: newBoard,
+                        parent: current,
+                        move: moves[i],
+                        depth: current.depth + 1,
+                        heuristic: getManhattanDistance(newBoard),
+                    };
+                    const boardString = JSON.stringify(newBoard);
+
+                    if (!closedSet.has(boardString)) {
+                        openSet.set(boardString, newNode);
+                    }
+
+                    renderBoard(newBoard);
+                }
+            }, "1000");
+        }
+    }
+
+    return "No se encontró una solución.";
+}
+
+

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="proyecto.css">
+    <script src="proyecto.js"></script>
+    <title>Puzzle-N</title>
+</head>
+<body>
+
+
+    <div class="grid-container" id="puzzle-container">
+    
+    </div>
+
+    <p id="sol1"></p>
+    <br>
+    <p id="sol2"></p>
+    <div class="nodo-container">
+        <div class="nodo-text">
+            <p id="nodosAbiertos">Nodos abiertos:</p>
+        </div>
+    </div>
+    
+    <div class="puzzle-container">
+        <div class="botones"> 
+            <button id="mix-button">Mezclar</button>
+            <button id="sol-bt">Solución Backtracking</button>
+            <button id="sol-a">Solución A*</button>  
+        </div>
+
+        <div class="puzzle-size">
+            <label for="board-size">Imagen del tablero: (Cargar antes de iniciar)</label>
+            <select id="imagenes">
+                <option value="1.jpg">IMG 1</option>
+                <option value="2.jpg">IMG 2</option>
+                <option value="3.jpg">IMG 3</option>
+            </select>
+        </div>
+
+        <div class="puzzle-size">
+            <label for="board-size">Selecciona el tamaño del tablero:</label>
+            <select id="board-size">
+                <option value="0">0X0</option>
+                <option value="2">2X2</option>
+                <option value="3">3x3</option>
+                <option value="4">4x4</option>
+                <option value="5">5x5</option>
+                <option value="6">6x6</option>
+                <option value="7">7x7</option>
+                <option value="8">8x8</option>
+                <option value="9">9x9</option>
+                <option value="10">10x10</option>
+                <option value="11">11x11</option>
+                <option value="12">12x12</option>
+                <option value="13">13x13</option>
+                <option value="14">14x14</option>
+                <option value="15">15x15</option>
+                <option value="16">16x16</option>
+                <option value="17">17x17</option>
+                <option value="18">18x18</option>
+                <option value="19">19x19</option>
+                <option value="20">20x20</option>
+            
+            </select>
+        
+        </div>
+
+        
+
+
+        <div id="tablero-container"> <div class="board" id="puzzle-board">
+            <table id="tablero"></table>
+        </div>
+
+    
+    </div>
+</body>
+</html>
